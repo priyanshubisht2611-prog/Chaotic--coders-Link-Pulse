@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import joblib
 import pandas as pd
@@ -50,25 +50,53 @@ class PhishingModel:
         
         return accuracy
 
-    def predict(self, url: str) -> Tuple[str, float]:
-        """Predict if a URL is phishing or not."""
+    def predict(self, url: str) -> Dict:
+        """Predict if a URL is phishing or not.
+
+        Returns dict with prediction details.
+        Label mapping: 1 = phishing, 0 = legitimate
+        """
         if self.model is None:
             raise ValueError("Model not trained or loaded")
-        
+
+        # Extract features
         features = extract_features(url)
         X = pd.DataFrame([features])
-        
-        # Ensure feature order
-        X = X[self.feature_names]
-        
-        proba = self.model.predict_proba(X)[0]
+
+        # Ensure feature order matches training
+        if self.feature_names:
+            for name in self.feature_names:
+                if name not in X.columns:
+                    X[name] = 0
+            X = X[self.feature_names]
+        else:
+            X = X[FEATURE_ORDER]
+
+        # Get prediction and probabilities
         prediction = self.model.predict(X)[0]
-        
-        # Convert to labels
-        label = 'phishing' if prediction == 1 else 'safe'
-        confidence = float(max(proba))
-        
-        return label, confidence
+        probabilities = self.model.predict_proba(X)[0]
+
+        # Model outputs: class 0 = legitimate, class 1 = phishing
+        prob_phishing = float(probabilities[1])
+        prob_legitimate = float(probabilities[0])
+
+        # Classification based on positive class (phishing)
+        if prediction == 1:
+            classification = "malicious"
+            risk_score = int(prob_phishing * 100)
+        else:
+            classification = "safe"
+            risk_score = int((1 - prob_phishing) * 100)
+
+        return {
+            "classification": classification,
+            "risk_score": risk_score,
+            "model_probability": prob_phishing,
+            "probabilities": {
+                "legitimate": prob_legitimate,
+                "phishing": prob_phishing
+            }
+        }
 
     def save(self, filepath: str):
         """Save model to file."""
@@ -87,8 +115,19 @@ class PhishingModel:
         """Load model from file."""
         model_data = joblib.load(filepath)
         instance = cls()
-        instance.model = model_data['model']
-        instance.feature_names = model_data['feature_names']
+        if isinstance(model_data, dict):
+            instance.model = model_data['model']
+            instance.feature_names = model_data.get('feature_names')
+        else:
+            instance.model = model_data
+            # Try to get feature names from the model if available, otherwise use defaults
+            instance.feature_names = getattr(model_data, 'feature_names_in_', None)
+            if instance.feature_names is not None:
+                instance.feature_names = list(instance.feature_names)
+            else:
+                # Default feature names based on the 23-feature schema
+                from .features import FEATURE_NAMES
+                instance.feature_names = FEATURE_NAMES
         return instance
 
 

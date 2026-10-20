@@ -1,0 +1,26 @@
+{
+  "test_samples": 47514,
+  "accuracy": 0.9952435071768321,
+  "phishing_precision": 0.9966669934320165,
+  "phishing_recall": 0.9922896740191294,
+  "phishing_f1": 0.9944735168973443,
+  "pr_auc": 0.9983723433613902,
+  "roc_auc": 0.9978952497667004,
+  "false_positive_rate": 0.0025164680630597293,
+  "confusion_matrix_labels": [
+    "legitimate",
+    "phishing"
+  ],
+  "confusion_matrix": [
+    [
+      26954,
+      68
+    ],
+    [
+      158,
+      20334
+    ]
+  ],
+  "split_method": "hostname-grouped holdout",
+  "random_state": 42
+}

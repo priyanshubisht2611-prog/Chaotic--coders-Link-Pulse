@@ -1,8 +1,18 @@
-"""Feature extraction from URLs for phishing detection."""
+"""Feature extraction from URLs for phishing detection - UCI PhiUSIIL compatible.
+
+This module extracts exactly 23 features matching the PhiUSIIL feature schema:
+- url_length, hostname_length, is_ip_address, dot_count, hyphen_count, at_count,
+- question_mark_count, ampersand_count, equals_count, underscore_count, percent_count,
+- digit_count, letter_count, digit_ratio, letter_ratio, special_char_ratio,
+- subdomain_count, path_depth, query_length, uses_https, has_punycode,
+- has_credentials, has_suspicious_keyword
+
+Label mapping: 1 = phishing, 0 = legitimate
+"""
 
 import re
 from urllib.parse import urlparse
-from typing import Dict
+from typing import Dict, List
 import tldextract
 
 # Common phishing indicators
@@ -12,21 +22,47 @@ SUSPICIOUS_KEYWORDS = [
     'session', 'token', 'code', 'suspended'
 ]
 
-SUSPICIOUS_TLDS = ['.xyz', '.top', '.club', '.tk', '.ml', '.ga', '.info', '.pw']
+# Exact feature order matching feature_schema.json
+FEATURE_ORDER = [
+    'url_length',
+    'hostname_length',
+    'is_ip_address',
+    'dot_count',
+    'hyphen_count',
+    'at_count',
+    'question_mark_count',
+    'ampersand_count',
+    'equals_count',
+    'underscore_count',
+    'percent_count',
+    'digit_count',
+    'letter_count',
+    'digit_ratio',
+    'letter_ratio',
+    'special_char_ratio',
+    'subdomain_count',
+    'path_depth',
+    'query_length',
+    'uses_https',
+    'has_punycode',
+    'has_credentials',
+    'has_suspicious_keyword'
+]
 
 
 def extract_features(url: str) -> Dict[str, float]:
     """
-    Extract numerical features from a URL for phishing detection.
-    
-    Returns a dictionary of numerical features.
+    Extract 23 numerical features from a URL for phishing detection.
+    Features match UCI PhiUSIIL dataset feature schema exactly.
     """
     features = {}
+    url = url or ''
+    url_lower = url.lower()
     
     # Basic URL properties
     features['url_length'] = len(url)
     
-    # Parse URL
+    # Parse URL safely
     try:
         parsed = urlparse(url)
         hostname = parsed.hostname or ''
@@ -39,70 +75,79 @@ def extract_features(url: str) -> Dict[str, float]:
         query = ''
         scheme = ''
     
-    # HTTPS check
-    features['has_https'] = 1.0 if scheme.lower() == 'https' else 0.0
-    
-    # Domain features
-    features['num_dots'] = hostname.count('.')
-    features['num_hyphens'] = hostname.count('-')
-    features['num_underscores'] = hostname.count('_')
-    features['num_digits'] = sum(c.isdigit() for c in hostname)
-    
-    # Path and query features
-    features['path_length'] = len(path)
-    features['query_length'] = len(query)
-    features['num_slashes'] = url.count('/')
-    features['num_question_marks'] = url.count('?')
-    features['num_equals'] = url.count('=')
-    features['num_ampersands'] = url.count('&')
-    
-    # Special characters
-    special_chars = ['@', '#', '%', '+', '~', '$', '|', '<', '>', '*', '(', ')']
-    features['num_special_chars'] = sum(url.count(c) for c in special_chars)
-    
-    # Count suspicious keywords
-    url_lower = url.lower()
-    features['suspicious_keywords_count'] = sum(
-        1 for kw in SUSPICIOUS_KEYWORDS if kw in url_lower
-    )
-    
-    # Suspicious TLD
-    features['suspicious_tld'] = 0.0
-    # Check hostname for TLD, not full URL
-    hostname_lower = hostname.lower()
-    for tld in SUSPICIOUS_TLDS:
-        if hostname_lower.endswith(tld) or f".{tld.lstrip('.')}" in hostname_lower:
-            features['suspicious_tld'] = 1.0
-            break
-    
-    # Multiple subdomains (potential red flag)
-    parts = hostname.split('.')
-    features['num_subdomains'] = max(0, len(parts) - 2)
-    features['has_ip_address'] = 1.0 if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname) else 0.0
-    
-    # Length ratios
+    # Hostname features
     features['hostname_length'] = len(hostname)
-    features['path_to_url_ratio'] = features['path_length'] / max(features['url_length'], 1)
+    features['is_ip_address'] = 1.0 if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname) else 0.0
     
-    # Presence of common phishing patterns
-    features['has_at_symbol'] = 1.0 if '@' in url else 0.0
-    features['has_multiple_http'] = 1.0 if url.lower().count('http') > 1 else 0.0
+    # Character counts
+    features['dot_count'] = hostname.count('.')
+    features['hyphen_count'] = hostname.count('-')
+    features['at_count'] = url.count('@')
+    features['question_mark_count'] = url.count('?')
+    features['ampersand_count'] = url.count('&')
+    features['equals_count'] = url.count('=')
+    features['underscore_count'] = url.count('_')
+    features['percent_count'] = url.count('%')
     
-    # Entropy-like feature: number of unique characters
-    features['unique_chars_ratio'] = len(set(url)) / max(len(url), 1)
+    # Digit and letter counts
+    digit_count = sum(c.isdigit() for c in url)
+    letter_count = sum(c.isalpha() for c in url)
+    features['digit_count'] = digit_count
+    features['letter_count'] = letter_count
     
-    # Domain extract features
+    # Ratios (use max to avoid division by zero)
+    url_len = max(len(url), 1)
+    features['digit_ratio'] = digit_count / url_len
+    features['letter_ratio'] = letter_count / url_len
+    
+    # Special characters (same set used in training)
+    special_chars = set('@#%+$|<>*()[]{}')
+    special_count = sum(1 for c in url if c in special_chars)
+    features['special_char_ratio'] = special_count / url_len
+    
+    # Subdomain count
+    parts = hostname.split('.')
+    features['subdomain_count'] = max(0, len(parts) - 2)
+    
+    # Path features
+    features['path_depth'] = path.count('/') if path else 0
+    features['query_length'] = len(query)
+    
+    # Security features
+    features['uses_https'] = 1.0 if scheme.lower() == 'https' else 0.0
+    
+    # Punycode detection
     try:
         ext = tldextract.extract(url)
-        features['domain_length'] = len(ext.domain)
-        features['suffix_length'] = len(ext.suffix)
+        features['has_punycode'] = 1.0 if ext.domain.startswith('xn--') else 0.0
     except Exception:
-        features['domain_length'] = 0
-        features['suffix_length'] = 0
+        features['has_punycode'] = 0.0
+    
+    # Credentials in URL (user:password@host)
+    features['has_credentials'] = 1.0 if '@' in url else 0.0
+    
+    # Suspicious keywords in URL
+    features['has_suspicious_keyword'] = 1.0 if any(kw in url_lower for kw in SUSPICIOUS_KEYWORDS) else 0.0
     
     return features
+
+
+def extract_features_in_order(url: str) -> List[float]:
+    """Extract features and return as ordered list matching training order."""
+    features = extract_features(url)
+    return [features.get(name, 0.0) for name in FEATURE_ORDER]
 
 
 def extract_features_batch(urls):
     """Extract features from a list of URLs."""
     return [extract_features(url) for url in urls]
+
+
+if __name__ == '__main__':
+    # Quick verification
+    test_url = 'https://www.google.com'
+    features = extract_features(test_url)
+    print(f"Features extracted for {test_url}:")
+    for name in FEATURE_ORDER:
+        print(f"  {name}: {features.get(name, 'MISSING')}")
+    print(f"Total features: {len(features)}")

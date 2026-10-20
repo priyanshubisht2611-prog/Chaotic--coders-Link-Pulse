@@ -1,0 +1,33 @@
+{
+  "feature_names": [
+    "url_length",
+    "hostname_length",
+    "is_ip_address",
+    "dot_count",
+    "hyphen_count",
+    "at_count",
+    "question_mark_count",
+    "ampersand_count",
+    "equals_count",
+    "underscore_count",
+    "percent_count",
+    "digit_count",
+    "letter_count",
+    "digit_ratio",
+    "letter_ratio",
+    "special_char_ratio",
+    "subdomain_count",
+    "path_depth",
+    "query_length",
+    "uses_https",
+    "has_punycode",
+    "has_credentials",
+    "has_suspicious_keyword"
+  ],
+  "positive_class": 1,
+  "positive_class_meaning": "phishing",
+  "negative_class": 0,
+  "negative_class_meaning": "legitimate",
+  "feature_source": "URL string only",
+  "sklearn_version": "1.6.1"
+}

@@ -133,15 +133,18 @@ async def scan_url(request: ScanRequest, model: PhishingModel = Depends(load_phi
     try:
         url_str = str(request.url)
         
-        # Get prediction from model
-        label, confidence = model.predict(url_str)
+        # Get prediction dictionary from the new model structure
+        prediction_result = model.predict(url_str)
+        label = prediction_result['classification']  # 'malicious' or 'safe'
+        confidence = prediction_result['model_probability']
         
         # Extract features for signals
         from backend.ml.features import extract_features
         features = extract_features(url_str)
         
-        # Calculate risk score and classification
-        risk_score, classification = _calculate_risk_score(label, confidence, features)
+        # Calculate risk score and classification (Map 'malicious' to 'phishing' for internal logic)
+        internal_label = 'phishing' if label == 'malicious' else 'safe'
+        risk_score, classification = _calculate_risk_score(internal_label, confidence, features)
         
         # Get risk signals
         signals = _features_to_risk_signals(features, url_str)
@@ -149,14 +152,11 @@ async def scan_url(request: ScanRequest, model: PhishingModel = Depends(load_phi
         # Get recommendation
         recommendation = _get_recommendation(classification, risk_score)
         
-        # Model probability for phishing class
-        model_prob = confidence if label == 'phishing' else 1 - confidence
-        
         response = ScanResponse(
             submitted_url=url_str,
             risk_score=risk_score,
             classification=classification,
-            model_probability=round(model_prob, 4),
+            model_probability=round(confidence, 4),
             explanatory_risk_signals=[RiskSignal(**s) for s in signals],
             recommendation=recommendation
         )

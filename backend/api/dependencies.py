@@ -17,5 +17,5 @@ def load_phishing_model():
     
     print(f"Loading phishing model from {model_path}...")
     model = PhishingModel.load(str(model_path))
-    print("Model loaded successfully")
+    print(f"Model loaded successfully: {len(model.feature_names)} features, {model.model.n_estimators} estimators.")
     return model
