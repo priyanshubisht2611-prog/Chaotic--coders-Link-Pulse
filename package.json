@@ -1,0 +1,12 @@
+{
+  "name": "chaotic-coders-linkpulse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LinkPulse — AI URL Shortener & Link Security Platform",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm --workspace=frontend run build"
+  }
+}
