@@ -1,6 +1,6 @@
 # LinkPulse API Contract
 
-## Endpoint: POST /scan
+## Endpoint: POST /scan/
 
 ### Request
 ```json

@@ -87,7 +87,6 @@ function displayResults(data) {
     riskIcon.textContent = '🚨';
   }
   
-  hideLoading();
   showResult();
 }
 

@@ -170,11 +170,21 @@ class TestModel:
 
 class TestPredictModule:
     """Tests for predict module."""
-    
+
+    @pytest.fixture(scope='class')
+    def trained_model_fixture(self):
+        """Train a model for testing."""
+        from ml.train import train_and_evaluate
+        model, feature_names, metrics = train_and_evaluate(test_size=0.2, random_state=42)
+        phishing_model = PhishingModel()
+        phishing_model.model = model
+        phishing_model.feature_names = feature_names
+        return phishing_model, metrics
+
     @pytest.fixture(autouse=True)
-    def setup_model(self, tmp_path, trained_model):
+    def setup_model(self, tmp_path, trained_model_fixture):
         """Create a test model file."""
-        model, _ = trained_model
+        model, _ = trained_model_fixture
         self.model_path = tmp_path / "test_model.joblib"
         model.save(str(self.model_path))
         return model

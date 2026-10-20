@@ -2,17 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { bandForScore } from '../utils/risk.js'
 
 /**
- * 240°-sweep SVG gauge. The arc is drawn with stroke-dasharray so it animates
- * smoothly from 0 to the score, and the needle rotates in the same frame.
+ * 240°-sweep SVG gauge. Angles are measured clockwise from 12 o'clock, so the
+ * arc runs from -120° (bottom-left) over the top to +120° (bottom-right).
+ * stroke-dashoffset drives the fill; the needle follows the same eased value.
  */
 const RADIUS = 80
 const STROKE = 14
 const SWEEP_DEG = 240
-const START_DEG = 150 // bottom-left of the arc
+const START_DEG = -SWEEP_DEG / 2
 
 function polar(cx, cy, r, angleDeg) {
-  const rad = ((angleDeg - 90) * Math.PI) / 180
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+  const rad = (angleDeg * Math.PI) / 180
+  return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) }
 }
 
 function arcPath(cx, cy, r, startDeg, endDeg) {
@@ -47,7 +48,7 @@ export default function RiskGauge({ score = 0, classification, size = 260 }) {
   }, [clamped])
 
   const cx = 130
-  const cy = 130
+  const cy = 122
   const backgroundArc = arcPath(cx, cy, RADIUS, START_DEG, START_DEG + SWEEP_DEG)
   const arcLength = (Math.PI * RADIUS * SWEEP_DEG) / 180
   const progress = animated / 100
@@ -61,11 +62,11 @@ export default function RiskGauge({ score = 0, classification, size = 260 }) {
       role="img"
       aria-label={`Risk score ${Math.round(clamped)} out of 100, classified ${band.label}`}
     >
-      <svg viewBox="0 0 260 232" className="w-full h-auto">
+      <svg viewBox="0 0 260 186" className="w-full h-auto">
         <defs>
-          <linearGradient id="gauge-glow" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.9" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.55" />
+          <linearGradient id="gauge-glow" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stopColor={color} stopOpacity="0.75" />
+            <stop offset="100%" stopColor={color} stopOpacity="1" />
           </linearGradient>
         </defs>
 
@@ -124,16 +125,17 @@ export default function RiskGauge({ score = 0, classification, size = 260 }) {
 
         <text
           x={cx}
-          y={cy - 4}
+          y={cy + 2}
           textAnchor="middle"
           fill="#f8fafc"
-          style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 46, fontWeight: 700 }}
+          style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 44, fontWeight: 700 }}
+          data-testid="risk-score-value"
         >
           {Math.round(animated)}
         </text>
         <text
           x={cx}
-          y={cy + 20}
+          y={cy + 24}
           textAnchor="middle"
           fill="#64748b"
           style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: 2 }}
