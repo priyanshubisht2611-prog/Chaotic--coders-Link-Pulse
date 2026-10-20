@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkPulse Scanner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">LP</div>
+      <h1>LinkPulse</h1>
+    </div>
+    
+    <div class="url-display" id="urlDisplay">Loading URL...</div>
+    
+    <button class="scan-btn" id="scanBtn">Scan Current Page</button>
+    
+    <div class="loading" id="loadingState" style="display: none;">
+      <div class="spinner"></div>
+      <p>Scanning URL...</p>
+    </div>
+    
+    <div class="result-card" id="resultCard">
+      <div class="risk-header">
+        <div>
+          <div class="risk-score" id="riskScore">--</div>
+          <div class="classification" id="classification">--</div>
+        </div>
+        <div id="riskIcon">🛡️</div>
+      </div>
+      
+      <div class="recommendation" id="recommendation">
+        Recommendation will appear here
+      </div>
+      
+      <div class="signals" id="signals">
+        <div class="signal">
+          <span class="signal-icon">•</span>
+          <span class="signal-text">Risk signals will appear here</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="error" id="errorMsg" style="display: none;"></div>
+    
+    <div class="footer">
+      Powered by ML phishing detection
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
